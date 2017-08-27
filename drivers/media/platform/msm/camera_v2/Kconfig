@@ -227,6 +227,43 @@ config OV12830
 		snapshot config = 4224 * 3000 at 15 fps.
 		2 lanes max fps is 18, 4 lanes max fps is 24.
 
+config IMX214
+	bool "Sensor IMX214 (BAYER 13M)"
+	depends on MSMB_CAMERA
+	---help---
+		Sony 12 MP Bayer Sensor with auto focus, uses
+		4 mipi lanes, preview config = 2104 x 1560 at 49 fps,
+		snapshot config = 4208 x 3120 at 30 fps,
+		Video HDR support.
+
+config IMX132
+	bool "Sensor IMX132 (BAYER 2M)"
+	depends on MSMB_CAMERA
+	---help---
+		Sony 2 MP Bayer Sensor
+		2 mipi lanes, preview config = 1920 x 1080 at 30 fps,
+		snapshot config = 1920 x 1080 at 30 fps,
+
+config S5K4H5YB
+	bool "Sensor S5K4H5YB (BAYER 8M)"
+	depends on MSMB_CAMERA
+	---help---
+		Samsung 8 MP Bayer Sensor with auto focus, uses
+		4 mipi lanes, preview config = 2104 x 1560 at 49 fps,
+		snapshot config = 3264 x 2448 at 30 fps.
+
+config AK7345_ACT
+	bool "Actuator AK7345 for IMX214 (BAYER 13M)"
+	depends on MSMB_CAMERA
+	---help---
+	Actuator for SONY 13 MP Bayer Sensor
+
+config BU64241_ACT
+	bool "Actuator BU64241 for S5K4H5YB (BAYER 8M)"
+	depends on MSMB_CAMERA
+	---help---
+	Actuator for Samsung 8 MP Bayer Sensor
+
 config MSM_V4L2_VIDEO_OVERLAY_DEVICE
 	tristate "Qualcomm MSM V4l2 video overlay device"
 	---help---

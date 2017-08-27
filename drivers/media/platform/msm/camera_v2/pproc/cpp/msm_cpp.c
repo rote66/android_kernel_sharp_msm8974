@@ -124,10 +124,22 @@ static void msm_enqueue(struct msm_device_queue *queue,
 
 static struct msm_cam_clk_info cpp_clk_info[] = {
 	{"camss_top_ahb_clk", -1},
+/* SHLOCAL_CAMERA_DRIVERS-> */
+#if 0
 	{"vfe_clk_src", 266670000},
+#else
+	{"vfe_clk_src", 465000000},
+#endif
+/* SHLOCAL_CAMERA_DRIVERS<- */
 	{"camss_vfe_vfe_clk", -1},
 	{"iface_clk", -1},
+/* SHLOCAL_CAMERA_DRIVERS-> */
+#if 0
 	{"cpp_core_clk", 266670000},
+#else
+	{"cpp_core_clk", 465000000},
+#endif
+/* SHLOCAL_CAMERA_DRIVERS<- */
 	{"cpp_iface_clk", -1},
 	{"cpp_bus_clk", -1},
 	{"micro_iface_clk", -1},
@@ -1742,6 +1754,20 @@ static int __devinit cpp_probe(struct platform_device *pdev)
 		pr_err("no enough memory\n");
 		return -ENOMEM;
 	}
+
+/* SHLOCAL_CAMERA_DRIVERS-> */
+#if defined(CONFIG_MACH_EBZ)
+	{
+		enum msm_cpu cur_cpu = socinfo_get_msm_cpu();
+
+		if(cur_cpu == MSM_CPU_8974PRO_AA){
+			pr_err("%s CPU is MSM_CPU_8974PRO_AA\n", __func__);
+			cpp_clk_info[1].clk_rate = 266670000;
+			cpp_clk_info[4].clk_rate = 266670000;
+		}
+	}
+#endif
+/* SHLOCAL_CAMERA_DRIVERS<- */
 
 	cpp_dev->cpp_clk = kzalloc(sizeof(struct clk *) *
 		ARRAY_SIZE(cpp_clk_info), GFP_KERNEL);
