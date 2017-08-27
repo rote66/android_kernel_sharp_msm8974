@@ -1722,6 +1722,10 @@ do {									\
 /* debugfs stuff */
 extern struct dentry *usb_debug_root;
 
+#ifdef CONFIG_USB_DWC3_SH_CUST
+extern int dwc3_otg_is_usb_host_running(bool);
+#endif /* CONFIG_USB_DWC3_SH_CUST */
+
 #endif  /* __KERNEL__ */
 
 #endif
