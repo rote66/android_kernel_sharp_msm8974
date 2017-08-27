@@ -40,6 +40,10 @@
 #include <mach/ramdump.h>
 
 #include "peripheral-loader.h"
+#ifdef CONFIG_SHSECBOOT_CUST
+#include <linux/delay.h>
+#include <sharp/shdisp_kerl.h>
+#endif /* CONFIG_SHSECBOOT_CUST */
 
 #define pil_err(desc, fmt, ...)						\
 	dev_err(desc->dev, "%s: " fmt, desc->name, ##__VA_ARGS__)
@@ -601,6 +605,26 @@ static void pil_parse_devicetree(struct pil_desc *desc)
 	desc->proxy_unvote_irq = clk_ready;
 }
 
+#ifdef CONFIG_SHSECBOOT_CUST
+void peripheral_loader_err(void)
+{
+	struct shdisp_main_bkl_ctl bkl;
+	int i= 0;
+
+	bkl.param = 255;
+	bkl.mode = SHDISP_MAIN_BKL_MODE_FIX;
+	for(i=0;i<20;i++){
+
+		if(i%2){
+			shdisp_api_main_bkl_off();
+		}else{
+			shdisp_api_main_bkl_on(&bkl);
+		}
+		msleep(1000);
+	}
+}
+#endif /* CONFIG_SHSECBOOT_CUST */
+
 /* Synchronize request_firmware() with suspend */
 static DECLARE_RWSEM(pil_pm_rwsem);
 
@@ -666,6 +690,9 @@ int pil_boot(struct pil_desc *desc)
 		ret = desc->ops->init_image(desc, fw->data, fw->size);
 	if (ret) {
 		pil_err(desc, "Invalid firmware metadata\n");
+#ifdef CONFIG_SHSECBOOT_CUST
+		peripheral_loader_err();
+#endif /* CONFIG_SHSECBOOT_CUST */
 		goto release_fw;
 	}
 

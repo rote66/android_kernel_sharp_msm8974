@@ -1139,6 +1139,12 @@ config MACH_FSM9XXX_SURF
 	  chipset based SURF evaluation board and
 	  FFA board.
 
+config MACH_EBZ
+	depends on ARCH_MSM8974
+	bool "SHARP EBZ"
+	help
+	  Support for Sharp ebz999zz.
+
 endmenu
 
 config MSM_STACKED_MEMORY
@@ -3053,4 +3059,76 @@ config KRAIT_REGULATOR
 	 line from the PMIC. This supply line is powered by multiple
 	 regulators running in ganged mode inside the PMIC. Enable
 	 this option to support such configurations.
+
+config SHSYS_CUST
+       bool "SHARP SYSTEM CUSTOMIZE"
+       default n
+
+config SHSYS_CUST_DEBUG
+	depends on SHSYS_CUST
+	default y
+	bool "SHARP SYSTEM CUSTOMIZE DEBUG"
+
+config SHBOOT_CUST
+       bool "SHARP BOOT CUSTOMIZE"
+       depends on SHSYS_CUST
+
+config SHSECBOOT_CUST
+	bool "SHARP SECBOOT CUSTOMIZE"
+	default y
+
+config SHLOG_SYSTEM
+	bool "SHARP LOG SYSTEM"
+	default y
+
+config SH_SLEEP_LOG
+	default y
+	bool "SHARP CUSTOMIZE SLEEP LOG"
+
+config SHWDTIME_CUST
+	bool "SHARP WATCHDOG CUSTOMIZE"
+	default y
+	help
+	 extend watchdog kick time for 3 seconds
+
+config SH_SHUTDOWN_FAILSAFE
+	bool "SHARP CUSTOMIZE Shutdown fail safe"
+	default y
+	help
+	 for shutdown fail safe
+
+config SH_PRINTK_MOD
+       bool "SHARP CONSOLE_UNLOCK MODIFY"
+       default y
+       help
+         mod console_unlock in printk.c
+
+config SHHOTSTANDBY_CUST
+	bool "SHARP HOTSTANDBY CUSTOMIZE"
+	default y
+
+config PERFLOCK
+	bool "HTC Performance Lock"
+	default n
+
+config SHSYS_CUST_PERFLOCK
+	bool "SHARP Performance Lock"
+	depends on PERFLOCK
+	default n
+
+config PERFLOCK_BOOT_LOCK
+	bool "Boot Time Performance Lock"
+	depends on PERFLOCK
+	default n
+
+config PERFLOCK_SUSPEND_LOCK
+	bool "Suspend Time Performance Lock"
+	depends on PERFLOCK
+	default n
+
+config SHSYS_CUST_USER_PERFLOCK
+	bool "Perflock User"
+	depends on PERFLOCK
+	default n
+
 endif
