@@ -1526,6 +1526,15 @@ static void __ref disable_msm_thermal(void)
 	put_online_cpus();
 }
 
+#ifdef CONFIG_SHSYS_CUST
+int get_msm_thermal_enabled(void)
+{
+	return enabled;
+}
+
+EXPORT_SYMBOL(get_msm_thermal_enabled);
+#endif /* CONFIG_SHSYS_CUST */
+
 static int __ref set_enabled(const char *val, const struct kernel_param *kp)
 {
 	int ret = 0;
@@ -1535,6 +1544,9 @@ static int __ref set_enabled(const char *val, const struct kernel_param *kp)
 		disable_msm_thermal();
 		hotplug_init();
 		freq_mitigation_init();
+#ifdef CONFIG_SHSYS_CUST
+		complete(&freq_mitigation_complete);
+#endif /* CONFIG_SHSYS_CUST */
 	} else
 		pr_info("%s: no action for enabled = %d\n",
 			KBUILD_MODNAME, enabled);
@@ -1585,6 +1597,9 @@ static ssize_t __ref store_cc_enabled(struct kobject *kobj,
 	} else {
 		pr_info("%s: Core control disabled\n", KBUILD_MODNAME);
 		unregister_cpu_notifier(&msm_thermal_cpu_notifier);
+#ifdef CONFIG_SHSYS_CUST
+		cpus_offlined = 0;
+#endif /* CONFIG_SHSYS_CUST */
 	}
 
 done_store_cc:
