@@ -103,6 +103,7 @@ obj-y				+= mmc/
 obj-$(CONFIG_MEMSTICK)		+= memstick/
 obj-y				+= leds/
 obj-$(CONFIG_SWITCH)		+= switch/
+obj-$(CONFIG_SHTIMER)	+= sharp/shtimer/
 obj-$(CONFIG_INFINIBAND)	+= infiniband/
 obj-$(CONFIG_SGI_SN)		+= sn/
 obj-y				+= firmware/
@@ -125,7 +126,16 @@ obj-y				+= platform/
 obj-y				+= ieee802154/
 #common clk code
 obj-y				+= clk/
+obj-$(CONFIG_SHSYS_CUST)	+= sharp/shsys/
+obj-$(CONFIG_SHTERM)		+= sharp/shterm/
+obj-$(CONFIG_SHLOG_SYSTEM)	+= sharp/shlog/
+obj-$(CONFIG_SHBOOT_CUST)	+= sharp/shboot/
+obj-y				+= sharp/mfc/
+obj-$(CONFIG_SHDIAG)		+= sharp/shdiag/
+obj-$(CONFIG_SHLCDC_BOARD)  += sharp/shdisp/
 
+obj-$(CONFIG_BATTERY_SH)	+= sharp/shbatt/
+obj-$(CONFIG_BATTERY_SH)	+= sharp/shchg/
 obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
 obj-$(CONFIG_NFC)		+= nfc/
 obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
@@ -145,3 +155,14 @@ obj-$(CONFIG_CORESIGHT)		+= coresight/
 
 obj-$(CONFIG_BIF)		+= bif/
 obj-$(CONFIG_SENSORS)		+= sensors/
+obj-$(CONFIG_SENSORS_PROXIMITY) += sharp/proximity/
+obj-$(CONFIG_SENSORS_CDC_PROXIMITY)	+= sharp/proximity_cdc/
+obj-$(CONFIG_SENSOR_SHGRIP)	+= sharp/shgrip/
+
+obj-$(CONFIG_TOUCHSCREEN_SHTPS) += sharp/shtps/
+obj-$(CONFIG_SHIRDA)		+= sharp/shirda/
+obj-$(CONFIG_SHMDS)		+= sharp/shmds/
+
+obj-$(CONFIG_SHVIBRATOR_LINEAR) += sharp/shvibrator/
+
+obj-$(CONFIG_SHCAMERA_PICT)		+= sharp/shcamled/
