@@ -508,39 +508,18 @@ static void pp_gamut_config(struct mdp_gamut_cfg_data *gamut_cfg,
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->r_tbl[i][j],
 						addr);
-#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
-			j = 0;
-			while (j < gamut_cfg->tbl_size[i]) {
-				GAMUT_CFG_TBL_DUMP('R', i, gamut_cfg->r_tbl[i], gamut_cfg->tbl_size[i], j);
-				j += 0x10;
-			}
-#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->g_tbl[i][j],
 						addr);
-#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
-			j = 0;
-			while (j < gamut_cfg->tbl_size[i]) {
-				GAMUT_CFG_TBL_DUMP('G', i, gamut_cfg->g_tbl[i], gamut_cfg->tbl_size[i], j);
-				j += 0x10;
-			}
-#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->b_tbl[i][j],
 						addr);
-#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
-			j = 0;
-			while (j < gamut_cfg->tbl_size[i]) {
-				GAMUT_CFG_TBL_DUMP('B', i, gamut_cfg->b_tbl[i], gamut_cfg->tbl_size[i], j);
-				j += 0x10;
-			}
-#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		if (gamut_cfg->gamut_first)

@@ -234,6 +234,7 @@ static int qpnp_vib_get_time(struct timed_output_dev *dev)
 		return (int)ktime_to_us(r);
 	} else
 		return 0;
+#endif /* CONFIG_QPNP_SCVIBRATOR */
 }
 
 static enum hrtimer_restart qpnp_vib_timer_func(struct hrtimer *timer)

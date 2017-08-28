@@ -18,7 +18,7 @@
 
 /* SHLOCAL_CAMERA_DRIVERS-> */
 #include <sharp/shbatt_kerl.h>
-extern int dwc3_otg_is_usb_host_running(bool);
+//extern int dwc3_otg_is_usb_host_running(bool);
 /* SHLOCAL_CAMERA_DRIVERS<- */
 
 #define FLASH_NAME "camera-led-flash"
@@ -117,7 +117,7 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 	case MSM_CAMERA_LED_PREHIGH:
 #ifdef CONFIG_SHCAMERA_PICT
 		shbatt_api_get_battery_capacity(&cap_p);
-		usb_host = dwc3_otg_is_usb_host_running(false);
+//		usb_host = dwc3_otg_is_usb_host_running(false);
 		if((cap_p <= 20) || (usb_host != 0)){
 			pr_err("%s cap_p=%d usb_host=%d\n", __func__, cap_p, usb_host);
 			shcamled_pmic_set_torch_led_1_current(200);
@@ -144,7 +144,7 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 	case MSM_CAMERA_LED_HIGH_PREPARE:
 #ifdef CONFIG_SHCAMERA_PICT
 		shbatt_api_get_battery_capacity(&cap_p);
-		usb_host = dwc3_otg_is_usb_host_running(false);
+//		usb_host = dwc3_otg_is_usb_host_running(false);
 		if((cap_p <= 20) || (usb_host != 0)){
 			pr_err("%s cap_p=%d usb_host=%d\n", __func__, cap_p, usb_host);
 		} else {
@@ -158,7 +158,7 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 /* SHLOCAL_CAMERA_DRIVERS-> */
 #ifdef CONFIG_SHCAMERA_PICT
 		shbatt_api_get_battery_capacity(&cap_p);
-		usb_host = dwc3_otg_is_usb_host_running(false);
+//		usb_host = dwc3_otg_is_usb_host_running(false);
 		if((cap_p <= 20) || (usb_host != 0)){
 			pr_err("%s cap_p=%d usb_host=%d\n", __func__, cap_p, usb_host);
 			shcamled_pmic_set_torch_led_1_current(200);

@@ -154,7 +154,15 @@ enum {
 	HSIC_CON,
 	NUM_HSIC_PARAM,
 };
-
+#ifdef CONFIG_MACH_EBZ
+enum {
+	MSMFB_BASE_FPS_LOW_DISABLE,
+	MSMFB_BASE_FPS_LOW_ENABLE,
+};
+#define MSMFB_SET_SSPP      _IOW(MSMFB_IOCTL_MAGIC, 169, struct mdp_overlay_pp_params)
+#define MSMFB_PANEL_STATE_CHG_WAIT _IOW(MSMFB_IOCTL_MAGIC, 170, unsigned int)
+#define MSMFB_CHANGE_BASE_FPS_LOW  _IOW(MSMFB_IOCTL_MAGIC, 182, unsigned int)
+#endif
 #define MDSS_MDP_ROT_ONLY		0x80
 #define MDSS_MDP_RIGHT_MIXER		0x100
 #define MDSS_MDP_DUAL_PIPE		0x200
