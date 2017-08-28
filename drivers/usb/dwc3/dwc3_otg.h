@@ -24,6 +24,10 @@
 
 #define DWC3_IDEV_CHG_MAX 1500
 
+#ifdef CONFIG_USB_DWC3_SH_CUST
+#define DWC3_IDEV_CHG_MIN	500
+#endif /* CONFIG_USB_DWC3_SH_CUST */
+
 struct dwc3_charger;
 
 /**
@@ -52,6 +56,9 @@ struct dwc3_otg {
 	int			host_bus_suspend;
 	int			charger_retry_count;
 	int			vbus_retry_count;
+#ifdef CONFIG_USB_DWC3_SH_CUST
+	int			adc_value;
+#endif /* CONFIG_USB_DWC3_SH_CUST */
 };
 
 /**
@@ -110,6 +117,9 @@ struct dwc3_ext_xceiv {
 	enum dwc3_id_state	id;
 	bool			bsv;
 	bool			otg_capability;
+#ifdef CONFIG_USB_DWC3_SH_CUST
+	int				adc_value;
+#endif /* CONFIG_USB_DWC3_SH_CUST */
 
 	/* to notify OTG about LPM exit event, provided by OTG */
 	void	(*notify_ext_events)(struct usb_otg *otg,
