@@ -2074,6 +2074,10 @@ asmlinkage void schedule_tail(struct task_struct *prev)
 		put_user(task_pid_vnr(current), current->set_child_tid);
 }
 
+#ifdef CONFIG_SHLOG_SYSTEM
+struct task_struct *latest_process[NR_CPUS];
+#endif
+
 /*
  * context_switch - switch to the new MM and the new
  * thread's register state.

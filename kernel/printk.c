@@ -1876,3 +1876,13 @@ void kmsg_dump(enum kmsg_dump_reason reason)
 	rcu_read_unlock();
 }
 #endif
+#ifdef CONFIG_SHLOG_SYSTEM
+unsigned long get_log_buf_addr(void)
+{
+	return (unsigned long)(&__log_buf);
+}
+unsigned long get_log_end_addr(void)
+{
+	return (unsigned long)(&log_end);
+}
+#endif

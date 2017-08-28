@@ -489,3 +489,13 @@ void unwind_table_del(struct unwind_table *tab)
 
 	kfree(tab);
 }
+
+#ifdef CONFIG_SHLOG_SYSTEM
+unsigned long get_origin_unwind_addr(void)
+{
+	unsigned long ret_addr = (unsigned long)__origin_unwind_idx;
+	if (unlikely(!ret_addr))
+		ret_addr = (unsigned long)unwind_find_origin(__start_unwind_idx, __stop_unwind_idx);
+	return ret_addr;
+}
+#endif

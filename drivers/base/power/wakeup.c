@@ -18,6 +18,9 @@
 
 #include "power.h"
 
+#ifdef CONFIG_SH_SLEEP_LOG
+#include <sharp/sh_sleeplog.h>
+#endif
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
  * if wakeup events are registered during or immediately before the transition.
@@ -761,6 +764,12 @@ void pm_wakep_autosleep_enabled(bool set)
 	}
 	rcu_read_unlock();
 }
+#ifdef CONFIG_SH_SLEEP_LOG
+char *sh_write_buffer_wakeup_sources(char *buffer)
+{
+	return sh_write_buffer_wakeup_sources_internal(buffer, &wakeup_sources);
+}
+#endif /* CONFIG_SH_SLEEP_LOG */
 #endif /* CONFIG_PM_AUTOSLEEP */
 
 static struct dentry *wakeup_sources_stats_dentry;
