@@ -19,6 +19,9 @@
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
 #include <linux/sort.h>
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+#include <sharp/sh_boot_manager.h>
+#endif /* CONFIG_SHLCDC_BOARD */
 
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
@@ -1443,6 +1446,14 @@ struct mdss_mdp_ctl *mdss_mdp_ctl_init(struct mdss_panel_data *pdata,
 		case 24:
 		default:
 			ctl->dst_format = MDSS_MDP_PANEL_FORMAT_RGB888;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			if (sh_boot_get_bootmode() != SH_BOOT_D && sh_boot_get_bootmode() != SH_BOOT_F_F) {
+				dither.flags = MDP_PP_OPS_ENABLE | MDP_PP_OPS_WRITE;
+				dither.g_y_depth = 6;
+				dither.r_cr_depth = 6;
+				dither.b_cb_depth = 6;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			break;
 		}
 		mdss_mdp_dither_config(&dither, NULL);

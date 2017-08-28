@@ -34,6 +34,9 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_rotator.h"
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00004 */ /* CUST_ID_00006 */
+#include "mdss_shdisp.h"
+#endif /* CONFIG_SHLCDC_BOARD */
 
 #include "splash.h"
 
@@ -58,6 +61,16 @@ static int mdss_mdp_overlay_free_fb_pipe(struct msm_fb_data_type *mfd);
 static int mdss_mdp_overlay_fb_parse_dt(struct msm_fb_data_type *mfd);
 static int mdss_mdp_overlay_off(struct msm_fb_data_type *mfd);
 static int mdss_mdp_overlay_splash_parse_dt(struct msm_fb_data_type *mfd);
+
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+struct mdss_mdp_sspp_data {
+	struct mdp_overlay_pp_params pp_cfg;
+	struct mdss_pipe_pp_res      pp_res;
+};
+struct mdss_mdp_sspp_data sspp_data;
+static int set_sspp_flg = 0;
+static int chg_format_flg = 0;
+#endif /* CONFIG_SHLCDC_BOARD */
 
 static int mdss_mdp_overlay_sd_ctrl(struct msm_fb_data_type *mfd,
 					unsigned int enable)
@@ -318,6 +331,12 @@ static int __mdss_mdp_overlay_setup_scaling(struct mdss_mdp_pipe *pipe)
 				rc, src, pipe->dst.h);
 		return rc;
 	}
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00051 */
+	pipe->scale.init_phase_x[0] = (pipe->scale.phase_step_x[0] -
+					(1 << PHASE_STEP_SHIFT)) / 2;
+	pipe->scale.init_phase_y[0] = (pipe->scale.phase_step_y[0] -
+					(1 << PHASE_STEP_SHIFT)) / 2;
+#endif /* CONFIG_SHLCDC_BOARD */
 	return rc;
 }
 
@@ -351,9 +370,15 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	struct mdss_mdp_format_params *fmt;
 	struct mdss_mdp_pipe *pipe;
 	struct mdss_mdp_mixer *mixer = NULL;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	u32 pipe_type, mixer_mux;
+#else /* CONFIG_SHLCDC_BOARD */
 	u32 pipe_type, mixer_mux, len;
+#endif /* CONFIG_SHLCDC_BOARD */
 	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
 	struct mdp_histogram_start_req hist;
+#endif /* CONFIG_SHLCDC_BOARD */
 	int ret;
 	u32 bwc_enabled;
 
@@ -441,6 +466,11 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 		pipe->mfd = mfd;
 		pipe->pid = current->tgid;
 		pipe->play_cnt = 0;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+		if (mfd->panel_info->pdest == DISPLAY_1 && pipe_type == MDSS_MDP_PIPE_TYPE_VIG && fmt->is_yuv) {
+			chg_format_flg = 1;
+		}
+#endif /* CONFIG_SHLCDC_BOARD */
 	} else {
 		pipe = mdss_mdp_pipe_get(mdp5_data->mdata, req->id);
 		if (IS_ERR_OR_NULL(pipe)) {
@@ -462,9 +492,18 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 			mdss_mdp_mixer_pipe_unstage(pipe);
 			pipe->mixer = mixer;
 		}
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+		if (mfd->panel_info->pdest == DISPLAY_1 && pipe->type == MDSS_MDP_PIPE_TYPE_VIG && pipe->src_fmt != fmt) {
+			chg_format_flg = 1;
+		 }
+#endif /* CONFIG_SHLCDC_BOARD */
 	}
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	pipe->flags = req->flags | (pipe->flags & MDP_OVERLAY_PP_CFG_EN);
+#else /* CONFIG_SHLCDC_BOARD */
 	pipe->flags = req->flags;
+#endif /* CONFIG_SHLCDC_BOARD */
 	bwc_enabled = req->flags & MDP_BWC_EN;
 	if (bwc_enabled  &&  !mdp5_data->mdata->has_bwc) {
 		pr_err("BWC is not supported in MDP version %x\n",
@@ -519,6 +558,14 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	pipe->bg_color = req->bg_color;
 
 	req->id = pipe->ndx;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	{
+		struct mdp_overlay_pp_params tmp;
+		tmp = pipe->req_data.overlay_pp_cfg;
+		pipe->req_data = *req;
+		pipe->req_data.overlay_pp_cfg = tmp;
+	}
+#else /* CONFIG_SHLCDC_BOARD */
 	pipe->req_data = *req;
 
 	if (pipe->flags & MDP_OVERLAY_PP_CFG_EN) {
@@ -571,6 +618,7 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 			pipe->pp_cfg.hist_lut_cfg.data = pipe->pp_res.hist_lut;
 		}
 	}
+#endif /* CONFIG_SHLCDC_BOARD */
 
 	if ((pipe->flags & MDP_DEINTERLACE) && !pipe->scale.enable_pxl_ext) {
 		if (pipe->flags & MDP_SOURCE_ROTATED_90) {
@@ -1062,6 +1110,21 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 			buf = NULL;
 		}
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+		if (mfd->panel_info->pdest == DISPLAY_1 && pipe->type == MDSS_MDP_PIPE_TYPE_VIG && (set_sspp_flg || chg_format_flg)) {
+			if (pipe->src_fmt->is_yuv) {
+				memcpy(&pipe->pp_cfg, &sspp_data.pp_cfg, sizeof(struct mdp_overlay_pp_params));
+				memcpy(&pipe->pp_res, &sspp_data.pp_res, sizeof(struct mdss_pipe_pp_res));
+				pipe->flags |= MDP_OVERLAY_PP_CFG_EN;
+			} else {
+				memset(&pipe->pp_cfg, 0, sizeof(struct mdp_overlay_pp_params));
+				memset(&pipe->pp_res, 0, sizeof(struct mdss_pipe_pp_res));
+				pipe->flags &= ~MDP_OVERLAY_PP_CFG_EN;
+			}
+			pipe->params_changed++;
+		}
+#endif /* CONFIG_SHLCDC_BOARD */
+
 		ret = mdss_mdp_pipe_queue_data(pipe, buf);
 		if (IS_ERR_VALUE(ret)) {
 			pr_warn("Unable to queue data for pnum=%d\n",
@@ -1069,6 +1132,13 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 			mdss_mdp_mixer_pipe_unstage(pipe);
 		}
 	}
+
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	if (mfd->panel_info->pdest == DISPLAY_1 && (set_sspp_flg || chg_format_flg)) {
+		set_sspp_flg = 0;
+		chg_format_flg = 0;
+	}
+#endif /* CONFIG_SHLCDC_BOARD */
 
 	if (mfd->panel.type == WRITEBACK_PANEL)
 		ret = mdss_mdp_wb_kickoff(mfd);
@@ -1640,6 +1710,16 @@ static void mdss_mdp_overlay_handle_vsync(struct mdss_mdp_ctl *ctl,
 
 	pr_debug("vsync on fb%d play_cnt=%d\n", mfd->index, ctl->play_cnt);
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00017 */
+	if (mdss_fb_base_fps_low_mode()) {
+		mdp5_data->fpslow_count = (mdp5_data->fpslow_count + 1) & 1;
+		if (mdp5_data->fpslow_count) {
+			pr_debug("%s: return....\n", __func__);
+			return;
+		}
+	}
+#endif /* CONFIG_SHLCDC_BOARD */
+
 	mdp5_data->vsync_time = t;
 	sysfs_notify_dirent(mdp5_data->vsync_event_sd);
 }
@@ -1651,6 +1731,7 @@ int mdss_mdp_overlay_vsync_ctrl(struct msm_fb_data_type *mfd, int en)
 
 	if (!ctl)
 		return -ENODEV;
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00047 */
 	if (!ctl->add_vsync_handler || !ctl->remove_vsync_handler)
 		return -EOPNOTSUPP;
 	if (!ctl->panel_data->panel_info.cont_splash_enabled
@@ -1659,6 +1740,20 @@ int mdss_mdp_overlay_vsync_ctrl(struct msm_fb_data_type *mfd, int en)
 				mfd->index, en);
 		return -EPERM;
 	}
+#else
+	mutex_lock(&ctl->lock);
+	if (!ctl->add_vsync_handler || !ctl->remove_vsync_handler) {
+		mutex_unlock(&ctl->lock);
+		return -EOPNOTSUPP;
+	}
+	if (!ctl->panel_data->panel_info.cont_splash_enabled
+			&& !ctl->power_on) {
+		pr_debug("fb%d vsync pending first update en=%d\n",
+				mfd->index, en);
+		mutex_unlock(&ctl->lock);
+		return -EPERM;
+	}
+#endif /* CONFIG_SHLCDC_BOARD */
 
 	pr_debug("fb%d vsync en=%d\n", mfd->index, en);
 
@@ -1669,6 +1764,9 @@ int mdss_mdp_overlay_vsync_ctrl(struct msm_fb_data_type *mfd, int en)
 		rc = ctl->remove_vsync_handler(ctl, &ctl->vsync_handler);
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00047 */
+	mutex_unlock(&ctl->lock);
+#endif /* CONFIG_SHLCDC_BOARD */
 	return rc;
 }
 
@@ -2132,6 +2230,11 @@ static int mdss_mdp_histo_ioctl(struct msm_fb_data_type *mfd, u32 cmd,
 	u32 block;
 	u32 pp_bus_handle;
 	static int req = -1;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00031 */
+	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
+	u32 width, height = 0;
+	u32 get_c0;
+#endif /* CONFIG_SHLCDC_BOARD */
 
 	switch (cmd) {
 	case MSMFB_HISTOGRAM_START:
@@ -2179,6 +2282,19 @@ static int mdss_mdp_histo_ioctl(struct msm_fb_data_type *mfd, u32 cmd,
 			return ret;
 
 		ret = mdss_mdp_hist_collect(&hist);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00031 */
+		if (!copy_from_user(&get_c0, &hist.c0[0], sizeof(u32))) {
+			if (!ret && mdp5_data && mdp5_data->ctl && (PP_LOCAT(hist.block) == MDSS_PP_DSPP_CFG)) {
+				width = mdp5_data->ctl->width;
+				height = mdp5_data->ctl->height;
+				if(get_c0 != (width * height)) {
+					SHDISP_VIDEO_PERFORMANCE("RESUME Histogram non-black-screen\n");
+				} else {
+					SHDISP_VIDEO_PERFORMANCE("RESUME Histogram black-screen\n");
+				}
+			}
+		}
+#endif /* CONFIG_SHLCDC_BOARD */
 		if (!ret)
 			ret = copy_to_user(argp, &hist, sizeof(hist));
 		break;
@@ -2392,6 +2508,65 @@ validate_exit:
 
 	return ret;
 }
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+static int mdss_mdp_set_sspp(struct msm_fb_data_type *mfd, struct mdp_overlay_pp_params *req_pp)
+{
+	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
+	struct mdss_mdp_pipe *pipe, *next;
+	int ret = 0;
+	u32 len;
+
+	ret = mutex_lock_interruptible(&mdp5_data->ov_lock);
+	if (ret)
+		return ret;
+
+	memcpy(&sspp_data.pp_cfg, req_pp,
+				sizeof(struct mdp_overlay_pp_params));
+	len = sspp_data.pp_cfg.igc_cfg.len;
+	if ((sspp_data.pp_cfg.config_ops & MDP_OVERLAY_PP_IGC_CFG) &&
+					(len == IGC_LUT_ENTRIES)) {
+		ret = copy_from_user(sspp_data.pp_res.igc_c0_c1,
+				sspp_data.pp_cfg.igc_cfg.c0_c1_data,
+				sizeof(uint32_t) * len);
+		if (ret) {
+			ret = -ENOMEM;
+			goto error;
+		}
+		ret = copy_from_user(sspp_data.pp_res.igc_c2,
+				sspp_data.pp_cfg.igc_cfg.c2_data,
+				sizeof(uint32_t) * len);
+		if (ret) {
+			ret = -ENOMEM;
+			goto error;
+		}
+		sspp_data.pp_cfg.igc_cfg.c0_c1_data =
+						sspp_data.pp_res.igc_c0_c1;
+		sspp_data.pp_cfg.igc_cfg.c2_data = sspp_data.pp_res.igc_c2;
+	}
+
+	len = sspp_data.pp_cfg.hist_lut_cfg.len;
+	if ((sspp_data.pp_cfg.config_ops & MDP_OVERLAY_PP_HIST_LUT_CFG) &&
+					(len == ENHIST_LUT_ENTRIES)) {
+		ret = copy_from_user(sspp_data.pp_res.hist_lut,
+				sspp_data.pp_cfg.hist_lut_cfg.data,
+				sizeof(uint32_t) * len);
+		if (ret) {
+			ret = -ENOMEM;
+			goto error;
+		}
+		sspp_data.pp_cfg.hist_lut_cfg.data = sspp_data.pp_res.hist_lut;
+	}
+
+	list_for_each_entry_safe(pipe, next, &mdp5_data->pipes_used, used_list) {
+		pipe->req_data.overlay_pp_cfg = *req_pp;
+	}
+	set_sspp_flg = 1;
+
+error:
+	mutex_unlock(&mdp5_data->ov_lock);
+	return ret;
+}
+#endif /* CONFIG_SHLCDC_BOARD */
 
 static int mdss_mdp_overlay_ioctl_handler(struct msm_fb_data_type *mfd,
 					  u32 cmd, void __user *argp)
@@ -2519,6 +2694,22 @@ static int mdss_mdp_overlay_ioctl_handler(struct msm_fb_data_type *mfd,
 	case MSMFB_OVERLAY_PREPARE:
 		ret = __handle_ioctl_overlay_prepare(mfd, argp);
 		break;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	case MSMFB_SET_SSPP:
+	{
+		struct mdp_overlay_pp_params overlay_pp_cfg;
+		ret = copy_from_user(&overlay_pp_cfg, argp, sizeof(overlay_pp_cfg));
+		if (!ret) {
+			ret = mdss_mdp_set_sspp(mfd, &overlay_pp_cfg);
+		}
+
+		if (ret) {
+			pr_err("MSMFB_SET_SSPP failed (%d)\n", ret);
+		}
+		break;
+	}
+		break;
+#endif /* CONFIG_SHLCDC_BOARD */
 	default:
 		if (mfd->panel.type == WRITEBACK_PANEL)
 			ret = mdss_mdp_wb_ioctl_handler(mfd, cmd, argp);
@@ -2606,6 +2797,11 @@ static int mdss_mdp_overlay_on(struct msm_fb_data_type *mfd)
 		mdp5_data->ctl = ctl;
 	}
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00004 */
+	if (mfd->index == 0)
+		mdss_shdisp_lcd_power_on();
+#endif /* CONFIG_SHLCDC_BOARD */
+
 	if (!mfd->panel_info->cont_splash_enabled &&
 		(mfd->panel_info->type != DTV_PANEL)) {
 		rc = mdss_mdp_overlay_start(mfd);
@@ -2647,6 +2843,15 @@ static int mdss_mdp_overlay_off(struct msm_fb_data_type *mfd)
 
 	if (!mdp5_data->ctl->power_on)
 		return 0;
+
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00017 */
+	mdp5_data->fpslow_count = 0;
+#endif /* CONFIG_SHLCDC_BOARD */
+
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00004 */ /* CUST_ID_00006 */
+	if (mfd->index == 0)
+		mdss_shdisp_lcd_disp_off();
+#endif /* CONFIG_SHLCDC_BOARD */
 
 	mdss_mdp_overlay_free_fb_pipe(mfd);
 

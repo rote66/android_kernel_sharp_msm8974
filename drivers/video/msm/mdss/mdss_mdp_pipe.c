@@ -210,7 +210,11 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 	struct mdss_mdp_plane_sizes ps;
 	int i;
 	int rc = 0, rot_mode = 0, wb_mixer = 0;
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00050 */
+	u32 nlines, format;
+#else /* CONFIG_SHLCDC_BOARD */
 	u32 nlines, format, seg_w;
+#endif /* CONFIG_SHLCDC_BOARD */
 	u16 width;
 
 	width = pipe->src.w >> pipe->horz_deci;
@@ -220,6 +224,12 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 			pipe->src_fmt, &ps);
 		if (rc)
 			return rc;
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00050 */
+		/*
+		 * Override fetch strides with SMP buffer size for both the
+		 * planes
+		 */
+#else /* CONFIG_SHLCDC_BOARD */
 		/*
 		 * Override fetch strides with SMP buffer size for both the
 		 * planes. BWC line buffer needs to be divided into 16
@@ -227,12 +237,27 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 		 * specific RAU size
 		 */
 		seg_w = DIV_ROUND_UP(pipe->src.w, 16);
+#endif /* CONFIG_SHLCDC_BOARD */
 		if (pipe->src_fmt->fetch_planes == MDSS_MDP_PLANE_INTERLEAVED) {
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00050 */
+			/*
+			 * BWC line buffer needs to be divided into 16
+			 * segments and every segment is aligned to format
+			 * specific RAU size
+			 */
+			ps.ystride[0] = ALIGN(pipe->src.w / 16 , 32) * 16 *
+				ps.rau_h[0] * pipe->src_fmt->bpp;
+#else /* CONFIG_SHLCDC_BOARD */
 			ps.ystride[0] = ALIGN(seg_w, 32) * 16 * ps.rau_h[0] *
-					pipe->src_fmt->bpp;
+				pipe->src_fmt->bpp;
+#endif /* CONFIG_SHLCDC_BOARD */
 			ps.ystride[1] = 0;
 		} else {
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00050 */
+			u32 bwc_width = ALIGN(pipe->src.w / 16, 64) * 16;
+#else /* CONFIG_SHLCDC_BOARD */
 			u32 bwc_width = ALIGN(seg_w, 64) * 16;
+#endif /* CONFIG_SHLCDC_BOARD */
 			ps.ystride[0] = bwc_width * ps.rau_h[0];
 			ps.ystride[1] = bwc_width * ps.rau_h[1];
 			/*

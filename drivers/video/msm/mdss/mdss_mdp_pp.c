@@ -508,18 +508,39 @@ static void pp_gamut_config(struct mdp_gamut_cfg_data *gamut_cfg,
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->r_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('R', i, gamut_cfg->r_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->g_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('G', i, gamut_cfg->g_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->b_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('B', i, gamut_cfg->b_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		if (gamut_cfg->gamut_first)
@@ -804,9 +825,14 @@ static int pp_vig_pipe_setup(struct mdss_mdp_pipe *pipe, u32 *op)
 			 * TODO: Allow pipe to be programmed whenever new CSC is
 			 * applied (i.e. dirty bit)
 			 */
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			mdss_mdp_csc_setup_data(MDSS_MDP_BLOCK_SSPP,
+			  pipe->num, 1, &pipe->pp_cfg.csc_cfg);
+#else /* CONFIG_SHLCDC_BOARD */
 			if (pipe->play_cnt == 0)
 				mdss_mdp_csc_setup_data(MDSS_MDP_BLOCK_SSPP,
 				  pipe->num, 1, &pipe->pp_cfg.csc_cfg);
+#endif /* CONFIG_SHLCDC_BOARD */
 	} else {
 		if (pipe->src_fmt->is_yuv)
 			opmode |= (0 << 19) |	/* DST_DATA=RGB */
@@ -816,10 +842,15 @@ static int pp_vig_pipe_setup(struct mdss_mdp_pipe *pipe, u32 *op)
 		 * TODO: Needs to be part of dirty bit logic: if there is a
 		 * previously configured pipe need to re-configure CSC matrix
 		 */
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+		mdss_mdp_csc_setup(MDSS_MDP_BLOCK_SSPP, pipe->num, 1,
+				   MDSS_MDP_CSC_YUV2RGB);
+#else /* CONFIG_SHLCDC_BOARD */
 		if (pipe->play_cnt == 0) {
 			mdss_mdp_csc_setup(MDSS_MDP_BLOCK_SSPP, pipe->num, 1,
 					   MDSS_MDP_CSC_YUV2RGB);
 		}
+#endif /* CONFIG_SHLCDC_BOARD */
 	}
 
 	pp_histogram_setup(&opmode, MDSS_PP_SSPP_CFG | pipe->num, pipe->mixer);
