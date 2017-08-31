@@ -44,14 +44,6 @@ static const unsigned int tacc_mant[] = {
 	35,	40,	45,	50,	55,	60,	70,	80,
 };
 
-#ifdef CONFIG_HS200_TUNING_EMMC_CUST_SH
-extern bool emmc_force_hs200_tuning;
-#endif /* CONFIG_HS200_TUNING_EMMC_CUST_SH */
-
-#ifdef CONFIG_MMC_EMMC_CUST_SH
-extern bool emmc_start_recovering_error;
-#endif /* CONFIG_MMC_EMMC_CUST_SH */
-
 #define UNSTUFF_BITS(resp,start,size)					\
 	({								\
 		const int __size = size;				\
@@ -1045,11 +1037,7 @@ static int mmc_select_hs200(struct mmc_card *card, u8 *ext_csd)
 
 	/* switch to HS200 mode if bus width set successfully */
 	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-#ifdef CONFIG_DRIVESTRENGTH_EMMC_CUST_SH
-				EXT_CSD_HS_TIMING, 0x42, 0);
-#else /* CONFIG_DRIVESTRENGTH_EMMC_CUST_SH */
 				EXT_CSD_HS_TIMING, 2, 0);
-#endif /* CONFIG_DRIVESTRENGTH_EMMC_CUST_SH */
 
 	if (err && err != -EBADMSG) {
 		pr_err("%s: HS200 switch failed\n",
@@ -1061,24 +1049,10 @@ static int mmc_select_hs200(struct mmc_card *card, u8 *ext_csd)
 	 * When HS200 activation is performed as part of HS400 selection
 	 * set the timing appropriately
 	 */
-#ifdef CONFIG_MMC_EMMC_CUST_SH
-	if (strncmp( mmc_hostname(card->host), HOST_MMC_MMC, sizeof(HOST_MMC_MMC)) || 
-		(emmc_start_recovering_error == false)){
-		if (mmc_card_hs400(card))
-			mmc_set_timing(host, MMC_TIMING_MMC_HS400);
-		else
-			mmc_set_timing(host, MMC_TIMING_MMC_HS200);
-	}
-	else{
-		pr_info( " %s : set timing to HS200\n", __func__ );
-		mmc_set_timing(host, MMC_TIMING_MMC_HS200);
-	}
-#else /* CONFIG_MMC_EMMC_CUST_SH */
 	if (mmc_card_hs400(card))
 		mmc_set_timing(host, MMC_TIMING_MMC_HS400);
 	else
 		mmc_set_timing(host, MMC_TIMING_MMC_HS200);
-#endif /* CONFIG_MMC_EMMC_CUST_SH */
 
 	mmc_set_clock(host, MMC_HS200_MAX_DTR);
 
@@ -1171,11 +1145,7 @@ static int mmc_select_hs400(struct mmc_card *card, u8 *ext_csd)
 
 	/* Switch to HS400 mode if bus width set successfully */
 	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-#ifdef CONFIG_DRIVESTRENGTH_EMMC_CUST_SH
-				 EXT_CSD_HS_TIMING, 0x43, 0);
-#else /* CONFIG_DRIVESTRENGTH_EMMC_CUST_SH */
 				 EXT_CSD_HS_TIMING, 3, 0);
-#endif /* CONFIG_DRIVESTRENGTH_EMMC_CUST_SH */
 	if (err && err != -EBADMSG) {
 		pr_err("%s: Setting HS_TIMING to HS400 failed (err:%d)\n",
 			mmc_hostname(host), err);
@@ -1467,11 +1437,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		 */
 
 		err = mmc_get_ext_csd(card, &ext_csd);
-#ifdef CONFIG_MMC_CUST_SH
-		if (err || ext_csd == NULL)
-#else	/* CONFIG_MMC_CUST_SH */
 		if (err)
-#endif	/* CONFIG_MMC_CUST_SH */
 			goto free_card;
 		card->cached_ext_csd = ext_csd;
 		err = mmc_read_ext_csd(card, ext_csd);
@@ -1564,10 +1530,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	/*
 	 * Activate highest bus speed mode supported by both host and card.
 	 */
-#ifdef CONFIG_HS200_TUNING_EMMC_CUST_SH
-	if (!strncmp( mmc_hostname(card->host), HOST_MMC_MMC, sizeof(HOST_MMC_MMC)))
-		emmc_force_hs200_tuning = true;
-#endif /* CONFIG_HS200_TUNING_EMMC_CUST_SH */
 	err = mmc_select_bus_speed(card, ext_csd);
 	if (err)
 		goto free_card;

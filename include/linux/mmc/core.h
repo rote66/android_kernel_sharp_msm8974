@@ -84,11 +84,6 @@ struct mmc_command {
 	unsigned int		retries;	/* max number of retries */
 	unsigned int		error;		/* command error */
 
-#ifdef  CONFIG_MMC_SD_BATTLOG_CUST_SH
-	unsigned int		retries_max;	/* max number of retries at start.
-										   'retries' is used for down counter. */
-#endif /* CONFIG_MMC_SD_BATTLOG_CUST_SH */
-
 /*
  * Standard errno values are used for errors, but some have specific
  * meaning in the MMC layer:
