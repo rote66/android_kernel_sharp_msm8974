@@ -783,11 +783,6 @@ struct dwc3 {
 	void (*notify_event) (struct dwc3 *, unsigned);
 	int			tx_fifo_size;
 	bool			tx_fifo_reduced;
-#ifdef CONFIG_USB_DWC3_SH_CUST
-	/* force full-speed enable */
-	unsigned long		fs_connect_enable;
-	u8			suspended;  /* suspended by the host */
-#endif /* CONFIG_USB_DWC3_SH_CUST */
 };
 
 /* -------------------------------------------------------------------------- */
