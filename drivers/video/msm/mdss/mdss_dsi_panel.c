@@ -863,6 +863,9 @@ static int mdss_panel_parse_dt(struct device_node *np,
 		"qcom,mdss-dsi-border-color", &tmp);
 	pinfo->lcdc.border_clr = (!rc ? tmp : 0);
 	pinfo->bklt_ctrl = UNKNOWN_CTRL;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00015 */
+	ctrl_pdata->bklt_ctrl = UNKNOWN_CTRL;
+#endif /* CONFIG_SHLCDC_BOARD */
 	data = of_get_property(np, "qcom,mdss-dsi-bl-pmic-control-type", NULL);
 	if (data) {
 		if (!strncmp(data, "bl_ctrl_wled", 12)) {
@@ -1076,8 +1079,12 @@ int mdss_dsi_panel_init(struct device_node *node,
 		return rc;
 	}
 
+#ifndef CONFIG_SHLCDC_BOARD /* CUST_ID_00016 */
 	if (!cmd_cfg_cont_splash)
 		pinfo->cont_splash_enabled = false;
+#else /* CONFIG_SHLCDC_BOARD */
+	pinfo->cont_splash_enabled = mdss_shdisp_get_disp_status();
+#endif /* CONFIG_SHLCDC_BOARD */
 	pr_info("%s: Continuous splash %s", __func__,
 		pinfo->cont_splash_enabled ? "enabled" : "disabled");
 
