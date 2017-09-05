@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -451,6 +451,9 @@ int mdss_mdp_csc_setup_data(u32 block, u32 blk_idx, u32 tbl_idx,
 
 	addr = base + CSC_MV_OFF;
 	for (i = 0; i < 9; i++) {
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+        pr_debug("data->csc_mv[%d]:0x%04x\n", i, data->csc_mv[i]);
+#endif /* CONFIG_SHLCDC_BOARD */
 		if (i & 0x1) {
 			val |= data->csc_mv[i] << 16;
 			writel_relaxed(val, addr);
@@ -463,6 +466,9 @@ int mdss_mdp_csc_setup_data(u32 block, u32 blk_idx, u32 tbl_idx,
 
 	addr = base + CSC_BV_OFF;
 	for (i = 0; i < 3; i++) {
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+        pr_debug("data->csc_pre_bv[%d]:0x%03x, data->csc_post_bv[%d]:0x%03x\n", i, data->csc_pre_bv[i], i, data->csc_post_bv[i]);
+#endif /* CONFIG_SHLCDC_BOARD */
 		writel_relaxed(data->csc_pre_bv[i], addr);
 		writel_relaxed(data->csc_post_bv[i], addr + CSC_POST_OFF);
 		addr += sizeof(u32 *);
@@ -470,9 +476,15 @@ int mdss_mdp_csc_setup_data(u32 block, u32 blk_idx, u32 tbl_idx,
 
 	addr = base + CSC_LV_OFF;
 	for (i = 0; i < 6; i += 2) {
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+        pr_debug("data->csc_pre_lv[%d]:0x%02x, data->csc_pre_lv[%d]:0x%02x\n", i, data->csc_pre_lv[i], i+1, data->csc_pre_lv[i+1]);
+#endif /* CONFIG_SHLCDC_BOARD */
 		val = (data->csc_pre_lv[i] << 8) | data->csc_pre_lv[i+1];
 		writel_relaxed(val, addr);
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+        pr_debug("data->csc_post_lv[%d]:0x%02x, data->csc_post_lv[%d]:0x%02x\n", i, data->csc_post_lv[i], i+1, data->csc_post_lv[i+1]);
+#endif /* CONFIG_SHLCDC_BOARD */
 		val = (data->csc_post_lv[i] << 8) | data->csc_post_lv[i+1];
 		writel_relaxed(val, addr + CSC_POST_OFF);
 		addr += sizeof(u32 *);
@@ -497,6 +509,27 @@ int mdss_mdp_csc_setup(u32 block, u32 blk_idx, u32 tbl_idx, u32 csc_type)
 	return mdss_mdp_csc_setup_data(block, blk_idx, tbl_idx, data);
 }
 
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+#define GAMUT_CFG_TBL_DUMP(rgb, tbl_no, cfg_tbl, cfg_tbl_size, offset) \
+pr_debug("[%c] Table[%d]:cfg->r_tbl[%d]:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" \
+, rgb, tbl_no, offset \
+, (offset+0x0 < cfg_tbl_size ? cfg_tbl[offset+0x0] : -1) \
+, (offset+0x1 < cfg_tbl_size ? cfg_tbl[offset+0x1] : -1) \
+, (offset+0x2 < cfg_tbl_size ? cfg_tbl[offset+0x2] : -1) \
+, (offset+0x3 < cfg_tbl_size ? cfg_tbl[offset+0x3] : -1) \
+, (offset+0x4 < cfg_tbl_size ? cfg_tbl[offset+0x4] : -1) \
+, (offset+0x5 < cfg_tbl_size ? cfg_tbl[offset+0x5] : -1) \
+, (offset+0x6 < cfg_tbl_size ? cfg_tbl[offset+0x6] : -1) \
+, (offset+0x7 < cfg_tbl_size ? cfg_tbl[offset+0x7] : -1) \
+, (offset+0x8 < cfg_tbl_size ? cfg_tbl[offset+0x8] : -1) \
+, (offset+0x9 < cfg_tbl_size ? cfg_tbl[offset+0x9] : -1) \
+, (offset+0xa < cfg_tbl_size ? cfg_tbl[offset+0xa] : -1) \
+, (offset+0xb < cfg_tbl_size ? cfg_tbl[offset+0xb] : -1) \
+, (offset+0xc < cfg_tbl_size ? cfg_tbl[offset+0xc] : -1) \
+, (offset+0xd < cfg_tbl_size ? cfg_tbl[offset+0xd] : -1) \
+, (offset+0xe < cfg_tbl_size ? cfg_tbl[offset+0xe] : -1) \
+, (offset+0xf < cfg_tbl_size ? cfg_tbl[offset+0xf] : -1))
+#endif /* CONFIG_SHLCDC_BOARD */
 static void pp_gamut_config(struct mdp_gamut_cfg_data *gamut_cfg,
 				char __iomem *base, struct pp_sts_type *pp_sts)
 {
@@ -508,18 +541,39 @@ static void pp_gamut_config(struct mdp_gamut_cfg_data *gamut_cfg,
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->r_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('R', i, gamut_cfg->r_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->g_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('G', i, gamut_cfg->g_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		for (i = 0; i < MDP_GAMUT_TABLE_NUM; i++) {
 			for (j = 0; j < gamut_cfg->tbl_size[i]; j++)
 				writel_relaxed((u32)gamut_cfg->b_tbl[i][j],
 						addr);
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			j = 0;
+			while (j < gamut_cfg->tbl_size[i]) {
+				GAMUT_CFG_TBL_DUMP('B', i, gamut_cfg->b_tbl[i], gamut_cfg->tbl_size[i], j);
+				j += 0x10;
+			}
+#endif /* CONFIG_SHLCDC_BOARD */
 			addr += 4;
 		}
 		if (gamut_cfg->gamut_first)
@@ -539,6 +593,12 @@ static void pp_pa_config(unsigned long flags, char __iomem *addr,
 {
 	if (flags & PP_FLAGS_DIRTY_PA) {
 		if (pa_config->flags & MDP_PP_OPS_WRITE) {
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+			pr_debug("pa_config->hue_adj :0x%03x\n", pa_config->hue_adj);
+			pr_debug("pa_config->sat_adj :0x%04x\n", pa_config->sat_adj);
+			pr_debug("pa_config->val_adj :0x%02x\n", pa_config->val_adj);
+			pr_debug("pa_config->cont_adj:0x%02x\n", pa_config->cont_adj);
+#endif /* CONFIG_SHLCDC_BOARD */
 			writel_relaxed(pa_config->hue_adj, addr);
 			addr += 4;
 			writel_relaxed(pa_config->sat_adj, addr);
@@ -767,6 +827,12 @@ static void pp_sharp_config(char __iomem *addr,
 				struct mdp_sharp_cfg *sharp_config)
 {
 	if (sharp_config->flags & MDP_PP_OPS_WRITE) {
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+		pr_debug("sharp_config->strength:   0x%03x\n", sharp_config->strength);
+		pr_debug("sharp_config->edge_thr:   0x%03x\n", sharp_config->edge_thr);
+		pr_debug("sharp_config->smooth_thr: 0x%03x\n", sharp_config->smooth_thr);
+		pr_debug("sharp_config->noise_thr:  0x%02x\n", sharp_config->noise_thr);
+#endif /* CONFIG_SHLCDC_BOARD */
 		writel_relaxed(sharp_config->strength, addr);
 		addr += 4;
 		writel_relaxed(sharp_config->edge_thr, addr);
@@ -2211,20 +2277,6 @@ pcc_config_exit:
 	return ret;
 }
 
-static void pp_read_igc_lut_cached(struct mdp_igc_lut_data *cfg)
-{
-	int i;
-	u32 disp_num;
-
-	disp_num = cfg->block - MDP_LOGICAL_BLOCK_DISP_0;
-	for (i = 0; i < IGC_LUT_ENTRIES; i++) {
-		cfg->c0_c1_data[i] =
-			mdss_pp_res->igc_disp_cfg[disp_num].c0_c1_data[i];
-		cfg->c2_data[i] =
-			mdss_pp_res->igc_disp_cfg[disp_num].c2_data[i];
-	}
-}
-
 static void pp_read_igc_lut(struct mdp_igc_lut_data *cfg,
 				char __iomem *addr, u32 blk_idx)
 {
@@ -2345,17 +2397,14 @@ int mdss_mdp_igc_lut_config(struct mdp_igc_lut_data *config,
 			&mdss_pp_res->igc_lut_c0c1[disp_num][0];
 		local_cfg.c2_data =
 			&mdss_pp_res->igc_lut_c2[disp_num][0];
-		if (mdata->has_no_lut_read)
-			pp_read_igc_lut_cached(&local_cfg);
-		else
-			pp_read_igc_lut(&local_cfg, igc_addr, dspp_num);
-		if (copy_to_user(config->c0_c1_data, local_cfg.c0_c1_data,
+		pp_read_igc_lut(&local_cfg, igc_addr, dspp_num);
+		if (copy_to_user(config->c0_c1_data, local_cfg.c2_data,
 			config->len * sizeof(u32))) {
 			ret = -EFAULT;
 			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 			goto igc_config_exit;
 		}
-		if (copy_to_user(config->c2_data, local_cfg.c2_data,
+		if (copy_to_user(config->c2_data, local_cfg.c0_c1_data,
 			config->len * sizeof(u32))) {
 			ret = -EFAULT;
 			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
@@ -2495,46 +2544,17 @@ static int pp_read_argc_lut(struct mdp_pgc_lut_data *config, char __iomem *addr)
 	return ret;
 }
 
-static int pp_read_argc_lut_cached(struct mdp_pgc_lut_data *config)
-{
-	int i;
-	u32 disp_num;
-	struct mdp_pgc_lut_data *pgc_ptr;
-
-	disp_num = PP_BLOCK(config->block) - MDP_LOGICAL_BLOCK_DISP_0;
-	switch (PP_LOCAT(config->block)) {
-	case MDSS_PP_LM_CFG:
-		pgc_ptr = &mdss_pp_res->argc_disp_cfg[disp_num];
-		break;
-	case MDSS_PP_DSPP_CFG:
-		pgc_ptr = &mdss_pp_res->pgc_disp_cfg[disp_num];
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	for (i = 0; i < GC_LUT_SEGMENTS; i++) {
-		config->r_data[i].x_start = pgc_ptr->r_data[i].x_start;
-		config->r_data[i].slope   = pgc_ptr->r_data[i].slope;
-		config->r_data[i].offset  = pgc_ptr->r_data[i].offset;
-
-		config->g_data[i].x_start = pgc_ptr->g_data[i].x_start;
-		config->g_data[i].slope   = pgc_ptr->g_data[i].slope;
-		config->g_data[i].offset  = pgc_ptr->g_data[i].offset;
-
-		config->b_data[i].x_start = pgc_ptr->b_data[i].x_start;
-		config->b_data[i].slope   = pgc_ptr->b_data[i].slope;
-		config->b_data[i].offset  = pgc_ptr->b_data[i].offset;
-	}
-
-	return 0;
-}
-
 /* Note: Assumes that its inputs have been checked by calling function */
 static void pp_update_hist_lut(char __iomem *addr,
 				struct mdp_hist_lut_data *cfg)
 {
 	int i;
+#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00019 */
+	for (i = 0; i < (ENHIST_LUT_ENTRIES/16); i++) {
+        int j = i*16;
+        pr_debug("cfg->data[%d]:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", j, cfg->data[j], cfg->data[j+1], cfg->data[j+2], cfg->data[j+3], cfg->data[j+4], cfg->data[j+5], cfg->data[j+6], cfg->data[j+7], cfg->data[j+8], cfg->data[j+9], cfg->data[j+10], cfg->data[j+11], cfg->data[j+12], cfg->data[j+13], cfg->data[j+14], cfg->data[j+15]);
+    }
+#endif /* CONFIG_SHLCDC_BOARD */
 	for (i = 0; i < ENHIST_LUT_ENTRIES; i++)
 		writel_relaxed(cfg->data[i], addr);
 	/* swap */
@@ -2553,10 +2573,6 @@ int mdss_mdp_argc_config(struct mdp_pgc_lut_data *config,
 	struct mdp_pgc_lut_data *pgc_ptr;
 	u32 tbl_size, r_size, g_size, b_size;
 	char __iomem *argc_addr = 0;
-	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
-
-	if (mdata == NULL)
-		return -EPERM;
 
 	if ((PP_BLOCK(config->block) < MDP_LOGICAL_BLOCK_DISP_0) ||
 		(PP_BLOCK(config->block) >= MDP_BLOCK_MAX))
@@ -2570,12 +2586,6 @@ int mdss_mdp_argc_config(struct mdp_pgc_lut_data *config,
 	mutex_lock(&mdss_pp_mutex);
 
 	disp_num = PP_BLOCK(config->block) - MDP_LOGICAL_BLOCK_DISP_0;
-	ret = pp_get_dspp_num(disp_num, &dspp_num);
-	if (ret) {
-		pr_err("%s, no dspp connects to disp %d", __func__, disp_num);
-		goto argc_config_exit;
-	}
-
 	switch (PP_LOCAT(config->block)) {
 	case MDSS_PP_LM_CFG:
 		argc_addr = mdss_mdp_get_mixer_addr_off(dspp_num) +
@@ -2601,6 +2611,12 @@ int mdss_mdp_argc_config(struct mdp_pgc_lut_data *config,
 	tbl_size = GC_LUT_SEGMENTS * sizeof(struct mdp_ar_gc_lut_data);
 
 	if (config->flags & MDP_PP_OPS_READ) {
+		ret = pp_get_dspp_num(disp_num, &dspp_num);
+		if (ret) {
+			pr_err("%s, no dspp connects to disp %d",
+				__func__, disp_num);
+			goto argc_config_exit;
+		}
 		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON, false);
 		local_cfg = *config;
 		local_cfg.r_data =
@@ -2609,31 +2625,21 @@ int mdss_mdp_argc_config(struct mdp_pgc_lut_data *config,
 			&mdss_pp_res->gc_lut_g[disp_num][0];
 		local_cfg.b_data =
 			&mdss_pp_res->gc_lut_b[disp_num][0];
-		if (mdata->has_no_lut_read)
-			pp_read_argc_lut_cached(&local_cfg);
-		else
-			pp_read_argc_lut(&local_cfg, argc_addr);
-
-		if ((tbl_size != local_cfg.num_r_stages *
-			sizeof(struct mdp_ar_gc_lut_data)) ||
-			(copy_to_user(config->r_data, local_cfg.r_data,
-				tbl_size))) {
+		pp_read_argc_lut(&local_cfg, argc_addr);
+		if (copy_to_user(config->r_data,
+			&mdss_pp_res->gc_lut_r[disp_num][0], tbl_size)) {
 			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 			ret = -EFAULT;
 			goto argc_config_exit;
 		}
-		if ((tbl_size != local_cfg.num_g_stages *
-			sizeof(struct mdp_ar_gc_lut_data)) ||
-			(copy_to_user(config->g_data, local_cfg.g_data,
-				tbl_size))) {
+		if (copy_to_user(config->g_data,
+			&mdss_pp_res->gc_lut_g[disp_num][0], tbl_size)) {
 			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 			ret = -EFAULT;
 			goto argc_config_exit;
 		}
-		if ((tbl_size != local_cfg.num_b_stages *
-			sizeof(struct mdp_ar_gc_lut_data)) ||
-			(copy_to_user(config->b_data, local_cfg.b_data,
-				tbl_size))) {
+		if (copy_to_user(config->b_data,
+			&mdss_pp_res->gc_lut_b[disp_num][0], tbl_size)) {
 			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 			ret = -EFAULT;
 			goto argc_config_exit;

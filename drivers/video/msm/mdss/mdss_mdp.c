@@ -133,7 +133,6 @@ static int mdss_mdp_parse_dt_handler(struct platform_device *pdev,
 static int mdss_mdp_parse_dt_prop_len(struct platform_device *pdev,
 				       char *prop_name);
 static int mdss_mdp_parse_dt_smp(struct platform_device *pdev);
-static int mdss_mdp_parse_dt_prefill(struct platform_device *pdev);
 static int mdss_mdp_parse_dt_misc(struct platform_device *pdev);
 static int mdss_mdp_parse_dt_ad_cfg(struct platform_device *pdev);
 static int mdss_mdp_parse_dt_bus_scale(struct platform_device *pdev);
@@ -1113,7 +1112,6 @@ static ssize_t mdss_mdp_show_capabilities(struct device *dev,
 	SPRINT("dma_pipes=%d\n", mdata->ndma_pipes);
 	SPRINT("smp_count=%d\n", mdata->smp_mb_cnt);
 	SPRINT("smp_size=%d\n", mdata->smp_mb_size);
-	SPRINT("smp_mb_per_pipe=%d\n", mdata->smp_mb_per_pipe);
 	SPRINT("max_downscale_ratio=%d\n", MAX_DOWNSCALE_RATIO);
 	SPRINT("max_upscale_ratio=%d\n", MAX_UPSCALE_RATIO);
 	if (mdata->max_bw_low)
@@ -1125,8 +1123,6 @@ static ssize_t mdss_mdp_show_capabilities(struct device *dev,
 		SPRINT(" bwc");
 	if (mdata->has_decimation)
 		SPRINT(" decimation");
-	if (mdata->highest_bank_bit)
-		SPRINT(" tile_format");
 	SPRINT("\n");
 
 	return cnt;
@@ -1564,12 +1560,6 @@ static int mdss_mdp_parse_dt(struct platform_device *pdev)
 	rc = mdss_mdp_parse_dt_smp(pdev);
 	if (rc) {
 		pr_err("Error in device tree : smp\n");
-		return rc;
-	}
-
-	rc = mdss_mdp_parse_dt_prefill(pdev);
-	if (rc) {
-		pr_err("Error in device tree : prefill\n");
 		return rc;
 	}
 
@@ -2054,84 +2044,6 @@ static int mdss_mdp_parse_dt_smp(struct platform_device *pdev)
 	return rc;
 }
 
-static void mdss_mdp_parse_dt_fudge_factors(struct platform_device *pdev,
-	char *prop_name, struct mdss_fudge_factor *ff)
-{
-	int rc;
-	u32 data[2] = {1, 1};
-
-	rc = mdss_mdp_parse_dt_handler(pdev, prop_name, data, 2);
-	if (rc) {
-		pr_err("err reading %s\n", prop_name);
-	} else {
-		ff->numer = data[0];
-		ff->denom = data[1];
-	}
-}
-
-static int mdss_mdp_parse_dt_prefill(struct platform_device *pdev)
-{
-	struct mdss_data_type *mdata = platform_get_drvdata(pdev);
-	struct mdss_prefill_data *prefill = &mdata->prefill_data;
-	int rc;
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-outstanding-buffer-bytes",
-		&prefill->ot_bytes);
-	if (rc) {
-		pr_err("prefill outstanding buffer bytes not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-y-buffer-bytes", &prefill->y_buf_bytes);
-	if (rc) {
-		pr_err("prefill y buffer bytes not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-scaler-buffer-lines-bilinear",
-		&prefill->y_scaler_lines_bilinear);
-	if (rc) {
-		pr_err("prefill scaler lines for bilinear not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-scaler-buffer-lines-caf",
-		&prefill->y_scaler_lines_caf);
-	if (rc) {
-		pr_debug("prefill scaler lines for caf not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-post-scaler-buffer-pixels",
-		&prefill->post_scaler_pixels);
-	if (rc) {
-		pr_err("prefill post scaler buffer pixels not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-pingpong-buffer-pixels",
-		&prefill->pp_pixels);
-	if (rc) {
-		pr_err("prefill pingpong buffer lines not specified\n");
-		return rc;
-	}
-
-	rc = of_property_read_u32(pdev->dev.of_node,
-		"qcom,mdss-prefill-fbc-lines", &prefill->fbc_lines);
-	if (rc) {
-		pr_err("prefill FBC lines not specified\n");
-		return rc;
-	}
-
-	return 0;
-}
-
 static int mdss_mdp_parse_dt_misc(struct platform_device *pdev)
 {
 	struct mdss_data_type *mdata = platform_get_drvdata(pdev);
@@ -2149,38 +2061,8 @@ static int mdss_mdp_parse_dt_misc(struct platform_device *pdev)
 		"qcom,mdss-has-decimation");
 	mdata->has_wfd_blk = of_property_read_bool(pdev->dev.of_node,
 		"qcom,mdss-has-wfd-blk");
-	mdata->has_no_lut_read = of_property_read_bool(pdev->dev.of_node,
-		"qcom,mdss-no-lut-read");
 	prop = of_find_property(pdev->dev.of_node, "batfet-supply", NULL);
 	mdata->batfet_required = prop ? true : false;
-	rc = of_property_read_u32(pdev->dev.of_node,
-		 "qcom,mdss-highest-bank-bit", &(mdata->highest_bank_bit));
-	if (rc)
-		pr_debug("Could not read optional property: highest bank bit\n");
-
-	/*
-	 * 2x factor on AB because bus driver will divide by 2
-	 * due to 2x ports to BIMC
-	 */
-	mdata->ab_factor.numer = 2;
-	mdata->ab_factor.denom = 1;
-	mdss_mdp_parse_dt_fudge_factors(pdev, "qcom,mdss-ab-factor",
-		&mdata->ab_factor);
-
-	/*
-	 * 1.2 factor on ib as default value. This value is
-	 * experimentally determined and should be tuned in device
-	 * tree.
-	 */
-	mdata->ib_factor.numer = 6;
-	mdata->ib_factor.denom = 5;
-	mdss_mdp_parse_dt_fudge_factors(pdev, "qcom,mdss-ib-factor",
-		&mdata->ib_factor);
-
-	mdata->clk_factor.numer = 1;
-	mdata->clk_factor.denom = 1;
-	mdss_mdp_parse_dt_fudge_factors(pdev, "qcom,mdss-clk-factor",
-		&mdata->clk_factor);
 
 	rc = of_property_read_u32(pdev->dev.of_node,
 			"qcom,max-bandwidth-low-kbps", &mdata->max_bw_low);
@@ -2426,10 +2308,8 @@ static void mdss_mdp_footswitch_ctrl(struct mdss_data_type *mdata, int on)
 		pr_debug("Enable MDP FS\n");
 		if (!mdata->fs_ena) {
 			regulator_enable(mdata->fs);
-			if (!mdata->ulps) {
-				mdss_mdp_cx_ctrl(mdata, true);
-				mdss_mdp_batfet_ctrl(mdata, true);
-			}
+			mdss_mdp_cx_ctrl(mdata, true);
+			mdss_mdp_batfet_ctrl(mdata, true);
 		}
 		mdata->fs_ena = true;
 	} else {
@@ -2437,38 +2317,10 @@ static void mdss_mdp_footswitch_ctrl(struct mdss_data_type *mdata, int on)
 		mdss_iommu_dettach(mdata);
 		if (mdata->fs_ena) {
 			regulator_disable(mdata->fs);
-			if (!mdata->ulps) {
-				mdss_mdp_cx_ctrl(mdata, false);
-				mdss_mdp_batfet_ctrl(mdata, false);
-			}
+			mdss_mdp_cx_ctrl(mdata, false);
+			mdss_mdp_batfet_ctrl(mdata, false);
 		}
 		mdata->fs_ena = false;
-	}
-}
-
-/**
- * mdss_mdp_footswitch_ctrl_ulps() - MDSS GDSC control with ULPS feature
- * @on: 1 to turn on footswitch, 0 to turn off footswitch
- * @dev: framebuffer device node
- *
- * MDSS GDSC can be voted off during idle-screen usecase for MIPI DSI command
- * mode displays with Ultra-Low Power State (ULPS) feature enabled. Upon
- * subsequent frame update, MDSS GDSC needs to turned back on and hw state
- * needs to be restored.
- */
-void mdss_mdp_footswitch_ctrl_ulps(int on, struct device *dev)
-{
-	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
-
-	pr_debug("called on=%d\n", on);
-	if (on) {
-		pm_runtime_get_sync(dev);
-		mdss_iommu_attach(mdata);
-		mdss_hw_init(mdata);
-		mdata->ulps = false;
-	} else {
-		mdata->ulps = true;
-		pm_runtime_put_sync(dev);
 	}
 }
 
