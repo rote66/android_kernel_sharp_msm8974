@@ -24,6 +24,24 @@
 #include "io.h"
 #include "xhci.h"
 
+#ifdef CONFIG_MACH_EBZ
+struct dwc3_otg *the_dwc3_otg = NULL;
+static atomic_t dwc3_usb_host_enable;
+int dwc3_otg_is_usb_host_running(bool isUnLock)
+{
+	if (!the_dwc3_otg || !the_dwc3_otg->otg.phy)
+		return 0;
+
+	/* In A Host Mode and Usb Host Enabled */
+	if (the_dwc3_otg->otg.phy->state >= OTG_STATE_A_IDLE && atomic_read(&dwc3_usb_host_enable) == 1) {
+		dev_dbg(the_dwc3_otg->otg.phy->dev, "usb host running\n");
+		return 1;
+	} else {
+		dev_dbg(the_dwc3_otg->otg.phy->dev, "usb host not running\n");
+		return 0;
+	}
+}
+#endif /* CONFIG_MACH_EBZ */
 #define VBUS_REG_CHECK_DELAY	(msecs_to_jiffies(1000))
 #define MAX_INVALID_CHRGR_RETRY 3
 static int max_chgr_retry_count = MAX_INVALID_CHRGR_RETRY;
